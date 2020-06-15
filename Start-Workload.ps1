@@ -12,12 +12,12 @@ param(
    
    $path = (Get-Location).Path,
    $B = "64"+"K",
-   $D = "600",
+   $D = "360",
    $Cache = "-Sh",
    $O = "12",
    $t = "32",
    $p = "-r",
-   $w = "50",
+   $w = "20",
    $file = "test",
    $filesize = "10G"
 )
