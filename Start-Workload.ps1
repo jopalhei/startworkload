@@ -14,10 +14,10 @@ param(
    $Cache = "-Sh",
    $O = "2",
    $t = "Auto",
-   $p = "-r",
+   $p = "r",
    $w = "0",
-   $file = "test",
-   $filesize = "10G"
+   $file = "testDiskSpd",
+   $filesize = "1G"
 )
 
 $nodes = Get-ClusterNode
@@ -103,7 +103,7 @@ if ($t -eq "Auto")
     }
 }
 
-
+$worklist = @()
 foreach ($node in $nodes){
    $server = $node.Name
    $number = $node.Id
@@ -112,7 +112,7 @@ foreach ($node in $nodes){
    {
       
       $CSVPath = $csv.SharedVolumeInfo.FriendlyVolumeName
-      $destfile = $CSVPath + "\" + $file + $number + ".dat "
+      $destfile = $CSVPath + "\" + $file + $number + ".vhdx "
       $targets = $targets + $destfile
       $destfile = Get-ChildItem -Path $destfile -ErrorAction SilentlyContinue
 
@@ -124,8 +124,22 @@ foreach ($node in $nodes){
 
 
    }
-   $cmd = $DiskSpdpath +" -b" + $B + " -d" + $d +" " +  $Cache + " -o" + $O + " -t" + $t + " " + $p + " -w" + $w + $c + " " + $targets +" > " + $respath
-   $jobs = Start-Job -Name DiskSpd -ScriptBlock {param ($server,$cmd) Invoke-Command -ComputerName $server -ScriptBlock  {param($cmd) &cmd /c $cmd } -ArgumentList $cmd} -ArgumentList $Server,$cmd
+   $cmd = $DiskSpdpath +" -b" + $B + " -d" + $d +" " +  $Cache + " -o" + $O + " -t" + $t + " " + "-" + $p + " -w" + $w + $c + " " + $targets +" > " + $respath
+
+   $work = [PSCustomObject]@{
+        Server = $server
+        Cmd = $cmd}
+   
+   $worklist += $work   
 }
+
+foreach($task in $worklist)
+{
+    $server = $task.Server
+    $cmd = $task.Cmd
+    $jobs = Start-Job -Name DiskSpd -ScriptBlock {param ($server,$cmd) Invoke-Command -ComputerName $server -ScriptBlock  {param($cmd) &cmd /c $cmd } -ArgumentList $cmd} -ArgumentList $Server,$cmd
+}
+
+
 Start-Sleep -Seconds 3
 Get-Job -State Running
